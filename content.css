@@ -201,3 +201,16 @@ ul.criteria b { color: var(--fg); font-weight: 600; }
 }
 
 ul.grid .cardmeta { display: block; font-size: 12px; color: var(--accent); font-style: normal; margin-top: 5px; }
+
+/* === collection filter + FAQ ============================================== */
+.filterbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.filterbar button {
+  font: inherit; font-size: 14px; padding: 6px 14px; border: 1px solid var(--rule);
+  border-radius: 999px; background: transparent; color: var(--accent); cursor: pointer;
+}
+.filterbar button[aria-pressed="true"] {
+  background: var(--accent); color: var(--bg); border-color: var(--accent);
+}
+.faq { margin: 36px 0; }
+.faq dt { font-weight: 600; margin: 18px 0 5px; font-size: 16px; }
+.faq dd { margin: 0; color: var(--fg-muted); font-size: 15px; line-height: 1.5; }

@@ -87,11 +87,19 @@ BY_SLUG = {p["slug"]: p for p in PLANTS}
 
 # Per-collection guidance prose (authored, ~110 words each), keyed by slug.
 GUIDANCE = {}
+FAQS = {}
 _guide_path = os.path.join(HERE, "category-intros.json")
 if os.path.exists(_guide_path):
     with open(_guide_path) as _gf:
         # normalise keys: the authored file uses style-shade_cottage; slugs use hyphens
         GUIDANCE = {k.replace("_", "-"): v for k, v in json.load(_gf).items()}
+# Intersection pages carry an object {guide, faq} per slug.
+_inter_path = os.path.join(HERE, "intersection-content.json")
+if os.path.exists(_inter_path):
+    with open(_inter_path) as _if:
+        for _slug, _obj in json.load(_if).items():
+            GUIDANCE[_slug] = _obj["guide"]
+            FAQS[_slug] = _obj.get("faq", [])
 
 TYPE_LABEL = {
     "perennial": "Perennials", "shrub": "Shrubs", "bulb": "Bulbs",
@@ -470,11 +478,28 @@ def plant_page(p):
 
 # --- collection pages ---------------------------------------------------------
 
+def aspect_classes(p):
+    c = []
+    if p["aspect"] & {"SOUTH", "WEST"}:
+        c.append("sun")
+    if "EAST" in p["aspect"]:
+        c.append("part")
+    if "NORTH" in p["aspect"]:
+        c.append("shade")
+    return " ".join(c)
+
+
 def card(p):
     sun = plant_tags(p)[0]
     meta = f"{sun} · {p['height']} cm" if p["height"] else sun
-    return (f'<li><a href="../plants/{p["slug"]}.html"><b>{e(p["common"])}</b>'
-            f'<span>{e(p["name"])}</span><span class="cardmeta">{e(meta)}</span></a></li>')
+    return (f'<li data-aspects="{aspect_classes(p)}"><a href="../plants/{p["slug"]}.html">'
+            f'<b>{e(p["common"])}</b><span>{e(p["name"])}</span>'
+            f'<span class="cardmeta">{e(meta)}</span></a></li>')
+
+
+FILTER_JS = """<script>
+(function(){var bar=document.querySelector('.filterbar'),grid=document.getElementById('plantgrid');if(!bar||!grid)return;bar.hidden=false;bar.addEventListener('click',function(ev){var b=ev.target.closest('button');if(!b)return;Array.prototype.forEach.call(bar.querySelectorAll('button'),function(x){x.removeAttribute('aria-pressed')});b.setAttribute('aria-pressed','true');var f=b.getAttribute('data-filter');Array.prototype.forEach.call(grid.querySelectorAll('li'),function(li){var a=' '+(li.getAttribute('data-aspects')||'')+' ';li.style.display=(f==='all'||a.indexOf(' '+f+' ')>-1)?'':'none';});});})();
+</script>"""
 
 
 def collection_page(slug, h1, title, intro, members, related_links):
@@ -485,6 +510,16 @@ def collection_page(slug, h1, title, intro, members, related_links):
     rel_block = f'<h2>Related collections</h2><p class="chips">{rel}</p>' if rel else ""
     guide = GUIDANCE.get(slug, "")
     guide_html = "".join(f"<p>{e(par.strip())}</p>" for par in guide.split("\n\n") if par.strip())
+    faq = FAQS.get(slug, [])
+    faq_html = ""
+    if faq:
+        qa = "".join(f"<dt>{e(q)}</dt><dd>{e(a)}</dd>" for q, a in faq)
+        faq_html = f'<section class="faq"><h2>Common questions</h2><dl>{qa}</dl></section>'
+    filterbar = ('<div class="filterbar" role="group" aria-label="Filter by sun" hidden>'
+                 '<button data-filter="all" aria-pressed="true">All</button>'
+                 '<button data-filter="sun">Full sun</button>'
+                 '<button data-filter="part">Part shade</button>'
+                 '<button data-filter="shade">Shade</button></div>')
     trail = [("Home", "/index.html"), ("Collections", "/collections/index.html"), (h1, None)]
     body = f"""
 {crumb_html([("Home","/"),("Collections","/collections/"),(h1,None)])}
@@ -493,21 +528,28 @@ def collection_page(slug, h1, title, intro, members, related_links):
 {guide_html}
 {cta(f"Border Builder is a garden border planner for iPhone and iPad. Pick from the {len(members)} plants below and it works them into a full plan: how many of each, where they go, and how the bed reads through the seasons.", up="../")}
 <h2>{len(members)} plants for this</h2>
-<ul class="grid">{cards}</ul>
+{filterbar}
+<ul class="grid" id="plantgrid">{cards}</ul>
+{faq_html}
 {rel_block}
+{FILTER_JS}
 """
     bc = breadcrumbs(trail)
     bc.pop("@context", None)
-    ld = {"@context": "https://schema.org", "@graph": [
-        {"@type": "CollectionPage", "name": h1, "url": canon,
-         "description": intro,
+    graph = [
+        {"@type": "CollectionPage", "name": h1, "url": canon, "description": intro,
          "mainEntity": {"@type": "ItemList", "numberOfItems": len(members),
                         "itemListElement": [
                             {"@type": "ListItem", "position": i + 1, "name": p["common"],
                              "url": f"{BASE_URL}/plants/{p['slug']}.html"}
                             for i, p in enumerate(members[:50])]}},
         bc,
-    ]}
+    ]
+    if faq:
+        graph.append({"@type": "FAQPage", "mainEntity": [
+            {"@type": "Question", "name": q,
+             "acceptedAnswer": {"@type": "Answer", "text": a}} for q, a in faq]})
+    ld = {"@context": "https://schema.org", "@graph": graph}
     return page(title, desc, canon, body, jsonld=ld, depth=1)
 
 
@@ -590,6 +632,45 @@ add("evergreen-shrubs", "Evergreen shrubs",
 add("plants-for-clay-shade", "Plants for clay soil in shade",
     "Tough plants for the hardest spot: heavy clay in shade.",
     lambda p: "CLAY" in p["soil"] and "NORTH" in p["aspect"])
+
+# intersection pages: high-intent long-tail (authored guidance + FAQ in
+# intersection-content.json). Each leads with the harder combined problem.
+add("plants-for-dry-shade", "Plants for dry shade",
+    "Plants for the hardest spot of all: shade with dry, free-draining soil.",
+    lambda p: "NORTH" in p["aspect"] and bool(p["soil"] & {"SANDY", "CHALK"}) and "WET" not in p["soil"])
+add("plants-for-clay-soil-in-sun", "Plants for clay soil in full sun",
+    "Plants for heavy clay that bakes in full sun.",
+    lambda p: "CLAY" in p["soil"] and bool(p["aspect"] & {"SOUTH", "WEST"}))
+add("plants-for-dry-sunny-borders", "Plants for dry, sunny borders",
+    "Drought-tolerant plants for free-draining soil in full sun.",
+    lambda p: "SANDY" in p["soil"] and bool(p["aspect"] & {"SOUTH", "WEST"}))
+add("plants-for-chalk-soil-in-sun", "Plants for chalk soil in sun",
+    "Lime-tolerant plants for thin, alkaline chalk in full sun.",
+    lambda p: "CHALK" in p["soil"] and bool(p["aspect"] & {"SOUTH", "WEST"}))
+add("plants-for-wet-shade", "Plants for wet soil in shade",
+    "Plants for ground that stays damp and sits in shade.",
+    lambda p: "WET" in p["soil"] and "NORTH" in p["aspect"])
+add("evergreen-plants-for-shade", "Evergreen plants for shade",
+    "Evergreens that keep a shaded border furnished all year.",
+    lambda p: p["evergreen"] and "NORTH" in p["aspect"])
+add("shrubs-for-full-sun", "Shrubs for full sun",
+    "Shrubs for a hot, bright, south or west-facing border.",
+    lambda p: p["type"] == "shrub" and bool(p["aspect"] & {"SOUTH", "WEST"}))
+add("perennials-for-shade", "Perennials for shade",
+    "Border perennials that flower happily out of direct sun.",
+    lambda p: p["type"] == "perennial" and "NORTH" in p["aspect"])
+add("grasses-for-full-sun", "Ornamental grasses for full sun",
+    "Ornamental grasses for an open, sunny position.",
+    lambda p: p["type"] == "grass" and bool(p["aspect"] & {"SOUTH", "WEST"}))
+add("pollinator-plants-for-sun", "Pollinator plants for full sun",
+    "Sun-loving plants that feed bees and butterflies.",
+    lambda p: p["pollinator"] and bool(p["aspect"] & {"SOUTH", "WEST"}))
+add("evergreen-shrubs-for-shade", "Evergreen shrubs for shade",
+    "Evergreen shrubs that hold structure in a shaded border.",
+    lambda p: p["type"] == "shrub" and p["evergreen"] and "NORTH" in p["aspect"])
+add("evergreen-groundcover", "Evergreen groundcover plants",
+    "Low, spreading evergreens that cover ground and suppress weeds.",
+    lambda p: p["evergreen"] and "GROUNDCOVER" in p["roles"])
 
 # index of slug -> (h1, href) for related-collection cross-linking
 COLL_INDEX = {slug: (h1, f"{slug}.html") for slug, h1, *_ in COLLECTIONS}
@@ -746,9 +827,9 @@ month, and exports the shopping list and a PDF.</p>
     ]
     ld = {"@context": "https://schema.org", "@graph": graph}
     return page("Border Builder: garden border planner for iPhone and iPad",
-                "Border Builder turns your bed's size, aspect, soil and style into a "
-                "complete planting plan with a drift map, bloom timeline and shopping list. "
-                "Free on the App Store. Browse 1,300+ plants by sun, soil and style.",
+                "A garden border and flower bed planner for iPhone and iPad. Border Builder "
+                "turns your bed's size, soil and light into a complete planting plan, with a "
+                "map, plant quantities, a bloom timeline and a shopping list. 1,323 plants.",
                 canon, body, jsonld=ld, depth=0, main_class="home")
 
 
