@@ -640,6 +640,17 @@ def qr_figure():
             '<figcaption>Scan to download</figcaption></figure>')
 
 
+PLANT_BAND = [
+    "acer-palmatum-osakazuki", "echinacea-purpurea", "lavandula-hidcote", "stipa-tenuissima",
+    "allium-purple-sensation", "digitalis-purpurea", "rudbeckia-fulgida-goldsturm",
+    "hosta-sum-and-substance", "verbena-bonariensis", "crocosmia-lucifer",
+    "salvia-nemorosa-caradonna", "geranium-rozanne", "paeonia-lactiflora-sarah-bernhardt",
+    "helleborus-x-hybridus", "tulipa-queen-of-night", "narcissus-tete-a-tete",
+    "astrantia-major-hadspen-blood", "alchemilla-mollis", "anemone-x-hybrida-honorine-jobert",
+    "buddleja-davidii",
+]
+
+
 def homepage_page():
     canon = f"{BASE_URL}/"
     gallery = "".join(
@@ -654,13 +665,20 @@ def homepage_page():
     tags = "".join(
         f'<a href="collections/{slug}.html">{e(label)}</a>' for slug, label in LIBRARY_LINKS
     )
+    band = "".join(
+        f'<a href="plants/{s}.html" title="{e(BY_SLUG[s]["common"])}">'
+        f'<img src="img/plants/{s}.webp" loading="lazy" alt="{e(BY_SLUG[s]["common"])} illustration"></a>'
+        for s in PLANT_BAND
+        if s in BY_SLUG and os.path.exists(os.path.join(HERE, "img", "plants", f"{s}.webp"))
+    )
     body = f"""
 <section class="hero">
 <div class="hero-copy">
+<p class="kicker">Garden border planner for iPhone and iPad</p>
 <h1>Plan a garden border that blooms all year</h1>
-<p class="sub">Border Builder is a garden border planner for iPhone and iPad. See your
-border drawn out, painted as it will grow in, and flowering across the year, before you
-buy a single plant.</p>
+<p class="sub">Tell Border Builder your bed's size, aspect and soil. It draws a complete
+planting plan: which plants, where they go, how many, and what the border will look like
+through every month of the year.</p>
 <div class="get">{store_buttons(up="")}{qr_figure()}</div>
 <p class="get-note">Free to download. No account, no ads.</p>
 </div>
@@ -669,8 +687,15 @@ buy a single plant.</p>
 alt="Border Builder showing a painted preview of a planted border">
 </div>
 </section>
-<p class="trust">{len(PLANTS):,} plants, with hardiness and climate data built in. No account,
-nothing tracked, works offline.</p>
+<section class="band">
+<h2>Every plant, illustrated</h2>
+<p class="band-sub">A catalogue of {len(PLANTS):,} border plants, each drawn by hand and
+checked against your climate. Browse by what you actually search for.</p>
+<div class="plantband">{band}</div>
+<nav class="tags">{tags}</nav>
+<p class="chips"><a class="chip" href="collections/index.html">All collections</a>
+<a class="chip" href="plants/index.html">Every plant</a></p>
+</section>
 <section class="block">
 <h2>From a few details to a border you can build</h2>
 <div class="gallery">{gallery}</div>
@@ -679,19 +704,12 @@ nothing tracked, works offline.</p>
 <h2>How it works</h2>
 <div class="steps">{steps}</div>
 </section>
-<section class="block">
-<h2>Explore {len(PLANTS):,} plants</h2>
-<p>Browse the catalogue by what you actually search for, then plan a border with what you find.</p>
-<nav class="tags">{tags}</nav>
-<p class="chips"><a class="chip" href="collections/index.html">All collections</a>
-<a class="chip" href="plants/index.html">Every plant</a></p>
-</section>
-<section class="block">
+<section class="block freepro">
 <h2>Free, with an optional Pro unlock</h2>
 <p>Designing a border and viewing the full plan, the drift map, the elevation and the
 bloom timeline is free, with no account and nothing tracked. A one-time Pro purchase
 saves unlimited borders, lets you edit the planting and re-plan around a month, and
-exports the shopping list and PDF.</p>
+exports the shopping list and a PDF.</p>
 </section>
 <section class="endcta">
 <h2>Design your border this weekend</h2>
