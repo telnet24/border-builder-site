@@ -256,7 +256,11 @@ def citation_block(cit):
                 lines.append(part)
     if not lines:
         return ""
-    items = "".join(f"<li>{e(x)}</li>" for x in lines[:6])
+    def linkify(part):
+        m = re.search(r"\(([a-z0-9.-]+\.[a-z]{2,})", part)
+        return (f'<a href="https://{m.group(1)}" rel="nofollow noopener">{e(part)}</a>'
+                if m else e(part))
+    items = "".join(f"<li>{linkify(x)}</li>" for x in lines[:6])
     return f'<section class="sources"><h2>Sources</h2><p>Bloom timing and hardiness drawn from:</p><ul>{items}</ul></section>'
 
 
@@ -438,6 +442,7 @@ def plant_page(p):
 <h2>Where to use it in a border</h2>
 <p>{e(plant_para)}</p>
 {found_html}
+{cta(f"Border Builder uses {p['common']}'s height, spread, soil, bloom months and companions to place it in a full border plan for your own conditions, on iPhone and iPad.", up="../")}
 <h2>Flowering through the year</h2>
 {bloom_strip(p["months"])}
 {notes_html}
@@ -446,7 +451,6 @@ def plant_page(p):
 <ul class="grid">{comp_html}</ul>
 <h2>Garden styles</h2>
 <p class="chips">{style_links or "Versatile across planting styles."}</p>
-{cta(f"See {p['common']} set in a full border, with spacing and companions worked out for your own conditions, in Border Builder.", up="../")}
 {citation_block(p["citations"])}
 """
     bc = breadcrumbs(trail)
@@ -467,8 +471,10 @@ def plant_page(p):
 # --- collection pages ---------------------------------------------------------
 
 def card(p):
+    sun = plant_tags(p)[0]
+    meta = f"{sun} · {p['height']} cm" if p["height"] else sun
     return (f'<li><a href="../plants/{p["slug"]}.html"><b>{e(p["common"])}</b>'
-            f'<span>{e(p["name"])}</span></a></li>')
+            f'<span>{e(p["name"])}</span><span class="cardmeta">{e(meta)}</span></a></li>')
 
 
 def collection_page(slug, h1, title, intro, members, related_links):
@@ -485,9 +491,9 @@ def collection_page(slug, h1, title, intro, members, related_links):
 <header class="hero"><h1>{e(h1)}</h1></header>
 <p class="lead">{e(intro)}</p>
 {guide_html}
+{cta(f"Border Builder is a garden border planner for iPhone and iPad. Pick from the {len(members)} plants below and it works them into a full plan: how many of each, where they go, and how the bed reads through the seasons.", up="../")}
 <h2>{len(members)} plants for this</h2>
 <ul class="grid">{cards}</ul>
-{cta(f"Pick what you like and Border Builder turns it into a full plan: how many of each, where they go, and how the border reads through the seasons.", up="../")}
 {rel_block}
 """
     bc = breadcrumbs(trail)
@@ -616,13 +622,13 @@ FEATURED = [
 
 
 GALLERY = [
-    ("app-plan.webp", "Border Builder's top-down planting plan", "A scaled drift map with plant counts"),
+    ("app-plan.webp", "Border Builder's top-down planting map", "A planting map, every plant placed and counted"),
     ("app-move.webp", "Moving and swapping plants on the map", "Adjust the plan before you buy"),
     ("app-pdf.webp", "The shopping list exported as a PDF", "Quantities and varieties for the nursery"),
 ]
 
 WHATYOUGET = [
-    ("Drift map", "A scaled top-down plan with every plant placed."),
+    ("Planting map", "A scaled top-down map showing exactly where each plant goes."),
     ("Plant quantities", "How many of each, worked out for the space."),
     ("Bloom timeline", "What is in flower, month by month, all year."),
     ("Shopping list", "Varieties and counts for the nursery, or a PDF."),
@@ -681,10 +687,11 @@ def homepage_page():
     body = f"""
 <section class="hero">
 <div class="hero-copy">
-<p class="kicker">Garden border planning for iPhone and iPad</p>
-<h1>Border Builder makes a planting plan you can actually build</h1>
-<p class="sub">Enter the size, light and soil of your border. Get a drift map, plant
-quantities, a bloom timeline and a nursery list, in minutes.</p>
+<p class="kicker">Garden border planner for iPhone and iPad</p>
+<h1>Design a garden border that fits your space, soil and sun</h1>
+<p class="sub">Tell Border Builder about your bed, its size, light and soil, and it works
+out which plants to use, how many to buy, where each one goes, and what flowers in every
+month of the year.</p>
 <div class="get">{store_buttons(up="")}</div>
 <p class="get-note">Free to download. No account, no ads.</p>
 {qr_figure()}
@@ -696,14 +703,16 @@ alt="Border Builder showing a painted preview of a planted border">
 </section>
 <section class="block">
 <h2>What you get</h2>
-<ul class="gets">{gets}</ul>
 <div class="gallery">{gallery}</div>
+<ul class="gets">{gets}</ul>
 </section>
 <section class="block conditions">
 <div class="cond-copy">
 <h2>Chosen for your conditions</h2>
 <p>Border Builder checks sun, soil, height, spread, season and style before it places a
-plant. It is a planting plan, not a plant list.</p>
+plant, from a catalogue of {len(PLANTS):,} plants whose hardiness and bloom timing are
+cross-checked against the RHS and Missouri Botanical Garden. It is a planting plan, not a
+plant list.</p>
 <ul class="criteria">
 <li><b>Sun and soil</b>, matched to your aspect and ground</li>
 <li><b>Height and role</b>, placed back to front</li>

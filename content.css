@@ -199,3 +199,5 @@ ul.criteria b { color: var(--fg); font-weight: 600; }
   ul.gets { grid-template-columns: repeat(2, 1fr); gap: 18px; }
   .conditions { grid-template-columns: 1fr; gap: 26px; }
 }
+
+ul.grid .cardmeta { display: block; font-size: 12px; color: var(--accent); font-style: normal; margin-top: 5px; }
