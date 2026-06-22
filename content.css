@@ -76,3 +76,75 @@ ul.grid span { display: block; font-size: 13px; color: var(--fg-muted); font-sty
 
 footer nav { margin-bottom: 8px; }
 footer nav a { margin-right: 14px; }
+
+/* === editorial display type (site-wide headings) ============================ */
+h1, h2, h3, .brand, .hero h1, .hero-copy h1 {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-weight: 600;
+}
+
+/* === homepage =============================================================== */
+main.home { max-width: 1080px; padding: 28px 24px 72px; }
+
+.hero {
+  display: grid; grid-template-columns: 1.15fr 1fr; gap: 48px; align-items: center;
+  padding: 24px 0 8px;
+}
+.hero-copy h1 { font-size: clamp(34px, 5vw, 58px); line-height: 1.04; margin: 0 0 18px; color: var(--accent); }
+.hero-copy .sub { font-size: 20px; line-height: 1.5; color: var(--fg); max-width: 40ch; margin: 0 0 28px; }
+.get { display: flex; align-items: flex-start; gap: 22px; flex-wrap: wrap; }
+.hero-shot { justify-self: center; }
+.hero-shot img {
+  width: 100%; max-width: 290px; height: auto; border-radius: 30px;
+  box-shadow: 0 18px 44px rgba(60, 50, 30, 0.18); transform: rotate(-2deg);
+}
+
+.qr { display: none; margin: 0; }
+.qr img { width: 92px; height: 92px; display: block; border-radius: 8px; }
+.qr figcaption { font-size: 12px; color: var(--fg-muted); margin-top: 5px; text-align: center; }
+
+.trust {
+  font-size: 15px; color: var(--fg-muted);
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  padding: 16px 0; margin: 28px 0 0;
+}
+
+section.block { padding: 56px 0 0; }
+section.block > h2 { font-size: 27px; margin: 0 0 28px; }
+section.block > p { font-size: 17px; max-width: 60ch; }
+
+.gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.gallery img {
+  width: 100%; height: auto; border-radius: 22px;
+  box-shadow: 0 12px 32px rgba(60, 50, 30, 0.14);
+}
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.step .n {
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  font-size: 30px; color: var(--accent); opacity: 0.55;
+}
+.step b { display: block; margin: 8px 0 5px; font-size: 17px; }
+.step span { color: var(--fg-muted); font-size: 15px; line-height: 1.45; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 10px 20px; margin: 18px 0; }
+.tags a { font-size: 16px; }
+
+.endcta {
+  background: var(--accent); border-radius: 18px; padding: 56px 32px;
+  text-align: center; margin-top: 64px;
+}
+.endcta h2 { color: var(--bg); font-size: 30px; margin: 0 0 26px; }
+.endcta .get { justify-content: center; }
+.endcta .qr figcaption { color: rgba(250, 247, 239, 0.7); }
+
+@media (min-width: 760px) { .qr { display: block; } }
+
+@media (max-width: 759px) {
+  main.home { padding: 16px 18px 56px; }
+  .hero { grid-template-columns: 1fr; gap: 24px; padding: 8px 0 0; }
+  .hero-shot { order: -1; }
+  .hero-shot img { max-width: 230px; transform: none; }
+  .gallery { grid-template-columns: 1fr; max-width: 300px; margin: 0 auto; }
+  .steps { grid-template-columns: 1fr; gap: 22px; }
+}

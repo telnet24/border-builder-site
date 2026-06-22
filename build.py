@@ -106,22 +106,32 @@ ROLE_LABEL = {
 
 # --- chrome -------------------------------------------------------------------
 
-def store_buttons():
+def store_buttons(up=""):
     btns = []
     if APP_STORE_URL:
-        btns.append(f'<a class="store" href="{e(APP_STORE_URL)}">Download on the App Store</a>')
+        btns.append(
+            f'<a class="badge" href="{e(APP_STORE_URL)}" '
+            f'aria-label="Download Border Builder on the App Store">'
+            f'<img src="{up}appstore-badge.svg" alt="Download on the App Store" '
+            f'width="143" height="48"></a>'
+        )
     if PLAY_STORE_URL:
-        btns.append(f'<a class="store" href="{e(PLAY_STORE_URL)}">Get it on Google Play</a>')
+        btns.append(
+            f'<a class="badge" href="{e(PLAY_STORE_URL)}" '
+            f'aria-label="Get Border Builder on Google Play">'
+            f'<img src="{up}googleplay-badge.svg" alt="Get it on Google Play" '
+            f'width="161" height="48"></a>'
+        )
     if not btns:
         btns.append('<a class="store" href="/">Get Border Builder</a>')
     return '<div class="stores">' + "".join(btns) + "</div>"
 
 
-def cta(line):
-    return f'<section class="cta"><p>{e(line)}</p>{store_buttons()}</section>'
+def cta(line, up=""):
+    return f'<section class="cta"><p>{e(line)}</p>{store_buttons(up)}</section>'
 
 
-def page(title, description, canonical, body, jsonld=None, depth=1):
+def page(title, description, canonical, body, jsonld=None, depth=1, main_class=""):
     up = "../" * depth
     ld = f'<script type="application/ld+json">{json.dumps(jsonld)}</script>' if jsonld else ""
     return f"""<!doctype html>
@@ -142,7 +152,7 @@ def page(title, description, canonical, body, jsonld=None, depth=1):
 {ld}
 </head>
 <body>
-<main>
+<main class="{main_class}">
 <a class="brand" href="{up}index.html">{SITE_NAME}</a>
 {body}
 <footer>
@@ -272,7 +282,7 @@ It suits {e(aspect_words(p["aspect"]))} and flowers {e(months_txt)}.</p>
 {bloom_strip(p["months"])}
 <h2>Garden styles</h2>
 <p class="chips">{style_links or "Versatile across planting styles."}</p>
-{cta(f"Place {p['common']} in a real border with the right spacing and neighbours - Border Builder draws the plan for you.")}
+{cta(f"Place {p['common']} in a real border with the right spacing and neighbours - Border Builder draws the plan for you.", up="../")}
 {citation_block(p["citations"])}
 <h2>Similar plants</h2>
 <ul class="grid">{rel_html}</ul>
@@ -298,7 +308,7 @@ def collection_page(slug, h1, title, intro, members, related_links):
 {crumb_html([("Home","../index.html"),("Collections","index.html"),(h1,None)])}
 <header class="hero"><h1>{e(h1)}</h1></header>
 <p class="lead">{e(intro)}</p>
-{cta("Pick from these and Border Builder arranges them into a planting plan: how many, where they go, and how the border reads through the seasons.")}
+{cta("Pick from these and Border Builder arranges them into a planting plan: how many, where they go, and how the border reads through the seasons.", up="../")}
 <h2>{len(members)} plants</h2>
 <ul class="grid">{cards}</ul>
 {rel_block}
@@ -425,39 +435,107 @@ FEATURED = [
 ]
 
 
+LIBRARY_LINKS = [
+    ("full-sun", "Full sun"), ("shade", "Shade"), ("partial-shade", "Partial shade"),
+    ("soil-clay", "Clay soil"), ("soil-sandy", "Sandy soil"), ("soil-chalk", "Chalk soil"),
+    ("soil-wet", "Wet soil"), ("evergreen", "Evergreen"),
+    ("pollinator-friendly", "Pollinator-friendly"), ("pet-safe", "Pet-safe"),
+    ("low-edging", "Edging and front"), ("tall-back", "Back of border"),
+    ("style-cottage", "Cottage garden"), ("style-wildlife", "Wildlife garden"),
+    ("style-mediterranean", "Mediterranean"), ("type-shrub", "Shrubs"),
+    ("type-perennial", "Perennials"), ("type-grass", "Ornamental grasses"),
+]
+
+GALLERY = [
+    ("app-plan.webp", "Border Builder top-down planting plan with plant drifts and spacing"),
+    ("app-move.webp", "Moving and swapping plants on the border map in Border Builder"),
+    ("app-pdf.webp", "Border Builder shopping list exported as a PDF"),
+]
+
+STEPS = [
+    ("1", "Describe your spot", "Tell it your bed size, aspect, soil and the look you want."),
+    ("2", "Get your plan", "Every plant is chosen for your conditions and placed by role, with quantities."),
+    ("3", "Plant it", "Take the drift map and the shopping list out to the garden."),
+]
+
+
+def qr_figure():
+    return ('<figure class="qr"><img src="img/appstore-qr.svg" width="92" height="92" '
+            'alt="QR code to download Border Builder on the App Store">'
+            '<figcaption>Scan to download</figcaption></figure>')
+
+
 def homepage_page():
     canon = f"{BASE_URL}/index.html"
-    feat = "".join(
-        f'<li><a href="collections/{slug}.html"><b>{e(label)}</b><span>{e(blurb)}</span></a></li>'
-        for slug, label, blurb in FEATURED
+    gallery = "".join(
+        f'<img src="img/{src}" width="500" height="1084" loading="lazy" alt="{e(alt)}">'
+        for src, alt in GALLERY
+    )
+    steps = "".join(
+        f'<div class="step"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}</span></div>'
+        for n, t, d in STEPS
+    )
+    tags = "".join(
+        f'<a href="collections/{slug}.html">{e(label)}</a>' for slug, label in LIBRARY_LINKS
     )
     body = f"""
-<header class="hero">
-<h1>Border Builder</h1>
-<p class="latin">A garden border planner for iPhone and iPad.</p>
-</header>
-<p class="lead">Tell Border Builder your bed's size, aspect, soil and style, and it
-draws a complete planting plan: a top-down map, a side-view elevation, a planting
-list, a year-round bloom timeline, and a shopping list.</p>
-{cta("Free on the App Store for iPhone and iPad in the US, UK and Canada.")}
-<h2>Explore the plants</h2>
-<p>Browse the {len(PLANTS):,} plants Border Builder can place, grouped by what you
-actually search for - sun, soil, colour, style and size.</p>
-<ul class="grid">{feat}</ul>
+<section class="hero">
+<div class="hero-copy">
+<h1>Know the bed before you dig</h1>
+<p class="sub">See your border drawn out, painted as it will grow in, and flowering
+across the year, before you buy a single plant.</p>
+<div class="get">{store_buttons(up="")}{qr_figure()}</div>
+</div>
+<div class="hero-shot">
+<img src="img/app-planted.webp" width="500" height="789"
+alt="Border Builder showing a painted preview of a planted border">
+</div>
+</section>
+<p class="trust">{len(PLANTS):,} plants, each checked against your climate. No account,
+nothing tracked, works offline.</p>
+<section class="block">
+<h2>From a few details to a border you can build</h2>
+<div class="gallery">{gallery}</div>
+</section>
+<section class="block">
+<h2>How it works</h2>
+<div class="steps">{steps}</div>
+</section>
+<section class="block">
+<h2>Explore {len(PLANTS):,} plants</h2>
+<p>Browse the catalogue by what you actually search for, then plan a border with what you find.</p>
+<nav class="tags">{tags}</nav>
 <p class="chips"><a class="chip" href="collections/index.html">All collections</a>
-<a class="chip" href="plants/index.html">All {len(PLANTS):,} plants</a></p>
+<a class="chip" href="plants/index.html">Every plant</a></p>
+</section>
+<section class="block">
 <h2>Free, with an optional Pro unlock</h2>
-<p>Designing and viewing a border is free. A one-time Border Builder Pro purchase
-unlocks saving unlimited borders, editing the planting (move and swap plants,
-re-plan around a month), and exporting a shopping list and PDF.</p>
+<p>Designing a border and viewing the full plan, the drift map, the elevation and the
+bloom timeline is free, with no account and nothing tracked. A one-time Pro purchase
+saves unlimited borders, lets you edit the planting and re-plan around a month, and
+exports the shopping list and PDF.</p>
+</section>
+<section class="endcta">
+<h2>Design your border this weekend</h2>
+<div class="get">{store_buttons(up="")}{qr_figure()}</div>
+</section>
 """
-    ld = {"@context": "https://schema.org", "@type": "WebSite", "name": SITE_NAME,
-          "url": BASE_URL + "/"}
-    return page(f"{SITE_NAME} - garden border planner for iPhone and iPad",
+    graph = [
+        {"@type": "WebSite", "name": SITE_NAME, "url": BASE_URL + "/"},
+        {"@type": "Organization", "name": SITE_NAME, "url": BASE_URL + "/",
+         "logo": BASE_URL + "/favicon.svg",
+         "sameAs": [APP_STORE_URL] if APP_STORE_URL else []},
+        {"@type": "MobileApplication", "name": "Border Builder: Garden Planner",
+         "operatingSystem": "iOS", "applicationCategory": "LifestyleApplication",
+         "url": BASE_URL + "/", "downloadUrl": APP_STORE_URL,
+         "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}},
+    ]
+    ld = {"@context": "https://schema.org", "@graph": graph}
+    return page("Border Builder: garden border planner for iPhone and iPad",
                 "Border Builder turns your bed's size, aspect, soil and style into a "
-                "complete planting plan. Free on the App Store. Browse 1,300+ plants by "
-                "sun, soil, colour and style.",
-                canon, body, jsonld=ld, depth=0)
+                "complete planting plan with a drift map, bloom timeline and shopping list. "
+                "Free on the App Store. Browse 1,300+ plants by sun, soil and style.",
+                canon, body, jsonld=ld, depth=0, main_class="home")
 
 
 def write(relpath, content):
