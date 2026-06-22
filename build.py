@@ -85,6 +85,13 @@ def norm(p):
 PLANTS = [norm(p) for p in RAW]
 BY_SLUG = {p["slug"]: p for p in PLANTS}
 
+# Per-collection guidance prose (authored, ~110 words each), keyed by slug.
+GUIDANCE = {}
+_guide_path = os.path.join(HERE, "category-intros.json")
+if os.path.exists(_guide_path):
+    with open(_guide_path) as _gf:
+        GUIDANCE = json.load(_gf)
+
 TYPE_LABEL = {
     "perennial": "Perennials", "shrub": "Shrubs", "bulb": "Bulbs",
     "grass": "Ornamental grasses", "annual": "Annuals", "climber": "Climbers",
@@ -461,29 +468,36 @@ def card(p):
 
 def collection_page(slug, h1, title, intro, members, related_links):
     canon = f"{BASE_URL}/collections/{slug}.html"
-    desc = (intro + f" {len(members)} plants in Border Builder.")[:300]
+    desc = (intro + f" {len(members)} plants, with size, aspect and bloom time for each.")[:200]
     cards = "".join(card(p) for p in members)
     rel = "".join(f'<a class="chip" href="{e(href)}">{e(name)}</a>' for name, href in related_links)
     rel_block = f'<h2>Related collections</h2><p class="chips">{rel}</p>' if rel else ""
+    guide = GUIDANCE.get(slug, "")
+    guide_html = "".join(f"<p>{e(par.strip())}</p>" for par in guide.split("\n\n") if par.strip())
+    trail = [("Home", "/index.html"), ("Collections", "/collections/index.html"), (h1, None)]
     body = f"""
 {crumb_html([("Home","../index.html"),("Collections","index.html"),(h1,None)])}
 <header class="hero"><h1>{e(h1)}</h1></header>
 <p class="lead">{e(intro)}</p>
-{cta("Pick from these and Border Builder arranges them into a planting plan: how many, where they go, and how the border reads through the seasons.", up="../")}
-<h2>{len(members)} plants</h2>
+{guide_html}
+<h2>{len(members)} plants for this</h2>
 <ul class="grid">{cards}</ul>
+{cta(f"Pick what you like and Border Builder turns it into a full plan: how many of each, where they go, and how the border reads through the seasons.", up="../")}
 {rel_block}
 """
-    item_list = {
-        "@context": "https://schema.org", "@type": "ItemList",
-        "numberOfItems": len(members),
-        "itemListElement": [
-            {"@type": "ListItem", "position": i + 1, "name": p["common"],
-             "url": f"{BASE_URL}/plants/{p['slug']}.html"}
-            for i, p in enumerate(members[:50])
-        ],
-    }
-    return page(title, desc, canon, body, jsonld=item_list, depth=1)
+    bc = breadcrumbs(trail)
+    bc.pop("@context", None)
+    ld = {"@context": "https://schema.org", "@graph": [
+        {"@type": "CollectionPage", "name": h1, "url": canon,
+         "description": intro,
+         "mainEntity": {"@type": "ItemList", "numberOfItems": len(members),
+                        "itemListElement": [
+                            {"@type": "ListItem", "position": i + 1, "name": p["common"],
+                             "url": f"{BASE_URL}/plants/{p['slug']}.html"}
+                            for i, p in enumerate(members[:50])]}},
+        bc,
+    ]}
+    return page(title, desc, canon, body, jsonld=ld, depth=1)
 
 
 def by_height(p, lo, hi):
