@@ -27,7 +27,7 @@ PLAY_STORE_URL = ""  # set when Android ships: https://play.google.com/store/app
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOGUE = os.path.join(
-    HERE, "..", "border-builder-android", "app", "src", "main", "assets", "plants.json"
+    HERE, "..", "border-builder-ios", "BorderBuilder", "BorderBuilder", "Resources", "plants.json"
 )
 SITE_NAME = "Border Builder"
 
@@ -622,9 +622,9 @@ LIBRARY_LINKS = [
 ]
 
 GALLERY = [
-    ("app-plan.webp", "Border Builder top-down planting plan with plant drifts and spacing"),
-    ("app-move.webp", "Moving and swapping plants on the border map in Border Builder"),
-    ("app-pdf.webp", "Border Builder shopping list exported as a PDF"),
+    ("app-plan.webp", "Border Builder's top-down planting plan", "A complete plan, designed for you"),
+    ("app-move.webp", "Moving and swapping plants on the map", "Move and swap until it is yours"),
+    ("app-pdf.webp", "The shopping list exported as a PDF", "A shopping list for the nursery"),
 ]
 
 STEPS = [
@@ -643,8 +643,9 @@ def qr_figure():
 def homepage_page():
     canon = f"{BASE_URL}/"
     gallery = "".join(
-        f'<img src="img/{src}" width="500" height="1084" loading="lazy" alt="{e(alt)}">'
-        for src, alt in GALLERY
+        f'<figure><img src="img/{src}" width="500" height="789" loading="lazy" alt="{e(alt)}">'
+        f'<figcaption>{e(cap)}</figcaption></figure>'
+        for src, alt, cap in GALLERY
     )
     steps = "".join(
         f'<div class="step"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}</span></div>'
@@ -656,12 +657,12 @@ def homepage_page():
     body = f"""
 <section class="hero">
 <div class="hero-copy">
-<h1>Know the bed before you dig</h1>
+<h1>Plan a garden border that blooms all year</h1>
 <p class="sub">Border Builder is a garden border planner for iPhone and iPad. See your
 border drawn out, painted as it will grow in, and flowering across the year, before you
 buy a single plant.</p>
 <div class="get">{store_buttons(up="")}{qr_figure()}</div>
-<p class="get-note">Free to download. No account, nothing tracked.</p>
+<p class="get-note">Free to download. No account, no ads.</p>
 </div>
 <div class="hero-shot">
 <img src="img/app-planted.webp" width="500" height="789"

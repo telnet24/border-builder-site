@@ -157,3 +157,9 @@ ul.notes li {
 }
 ul.notes li::before { content: "\2013"; position: absolute; left: 0; color: var(--accent); }
 .get-note { font-size: 14px; color: var(--fg-muted); margin: 14px 0 0; }
+
+.gallery figure { margin: 0; }
+.gallery figcaption {
+  margin-top: 14px; font-size: 16px; color: var(--fg); text-align: center;
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+}
