@@ -193,3 +193,36 @@ main.home .hero { border-bottom: none; padding-bottom: 0; }
   .plant-hero { flex-direction: row; gap: 14px; }
   .plant-art { width: 96px; height: 96px; }
 }
+
+/* === redesign: what-you-get, conditions cluster, accent ===================== */
+:root { --accent2: #a8633a; }
+.qr img { width: 76px; height: 76px; }   /* QR demoted to secondary in hero */
+
+ul.gets {
+  list-style: none; padding: 0; margin: 0 0 40px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+}
+ul.gets li { border-top: 2px solid var(--accent); padding-top: 10px; }
+ul.gets b { display: block; font-size: 16px; margin-bottom: 4px; }
+ul.gets span { font-size: 14px; color: var(--fg-muted); line-height: 1.45; }
+
+.conditions { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 48px; align-items: start; }
+.cond-copy h2 { margin: 0 0 12px; }
+.cond-copy > p { font-size: 17px; max-width: 40ch; margin: 0 0 18px; }
+ul.criteria { list-style: none; padding: 0; margin: 0 0 20px; }
+ul.criteria li { padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 15px; color: var(--fg-muted); }
+ul.criteria b { color: var(--fg); font-weight: 600; }
+.cond-cluster { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.condplant { margin: 0; text-align: center; }
+.condplant img { width: 100%; max-width: 104px; height: 104px; object-fit: contain; }
+.condplant figcaption b { display: block; font-size: 13px; margin-top: 4px; line-height: 1.2; }
+.ptags { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 6px; }
+.ptags em {
+  font-style: normal; font-size: 10.5px; padding: 2px 7px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent2) 15%, transparent); color: var(--accent2);
+}
+
+@media (max-width: 759px) {
+  ul.gets { grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .conditions { grid-template-columns: 1fr; gap: 26px; }
+}

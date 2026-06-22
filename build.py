@@ -163,7 +163,7 @@ def page(title, description, canonical, body, jsonld=None, depth=1, main_class="
 </head>
 <body>
 <main class="{main_class}">
-<a class="brand" href="{up}index.html">{SITE_NAME}</a>
+<a class="brand" href="/">{SITE_NAME}</a>
 {body}
 <footer>
 <nav><a href="{up}plants/index.html">All plants</a><a href="{up}collections/index.html">Collections</a><a href="{up}privacy.html">Privacy</a><a href="{up}support.html">Support</a></nav>
@@ -426,7 +426,7 @@ def plant_page(p):
 
     trail = [("Home", "/index.html"), ("Plants", "/plants/index.html"), (p["common"], None)]
     body = f"""
-{crumb_html([("Home","../index.html"),("Plants","index.html"),(p["common"],None)])}
+{crumb_html([("Home","/"),("Plants","/plants/"),(p["common"],None)])}
 <header class="hero plant-hero">
 <div class="plant-head"><h1>{e(p["common"])}</h1>
 <p class="latin">{e(p["name"])}</p></div>
@@ -481,7 +481,7 @@ def collection_page(slug, h1, title, intro, members, related_links):
     guide_html = "".join(f"<p>{e(par.strip())}</p>" for par in guide.split("\n\n") if par.strip())
     trail = [("Home", "/index.html"), ("Collections", "/collections/index.html"), (h1, None)]
     body = f"""
-{crumb_html([("Home","../index.html"),("Collections","index.html"),(h1,None)])}
+{crumb_html([("Home","/"),("Collections","/collections/"),(h1,None)])}
 <header class="hero"><h1>{e(h1)}</h1></header>
 <p class="lead">{e(intro)}</p>
 {guide_html}
@@ -627,22 +627,49 @@ LIBRARY_LINKS = [
 ]
 
 GALLERY = [
-    ("app-plan.webp", "Border Builder's top-down planting plan", "A complete plan, designed for you"),
-    ("app-move.webp", "Moving and swapping plants on the map", "Move and swap until it is yours"),
-    ("app-pdf.webp", "The shopping list exported as a PDF", "A shopping list for the nursery"),
+    ("app-plan.webp", "Border Builder's top-down planting plan", "A scaled drift map with plant counts"),
+    ("app-move.webp", "Moving and swapping plants on the map", "Adjust the plan before you buy"),
+    ("app-pdf.webp", "The shopping list exported as a PDF", "Quantities and varieties for the nursery"),
 ]
 
-STEPS = [
-    ("1", "Describe your spot", "Tell it your bed size, aspect, soil and the look you want."),
-    ("2", "Get your plan", "Every plant is chosen for your conditions and placed by role, with quantities."),
-    ("3", "Plant it", "Take the drift map and the shopping list out to the garden."),
+WHATYOUGET = [
+    ("Drift map", "A scaled top-down plan with every plant placed."),
+    ("Plant quantities", "How many of each, worked out for the space."),
+    ("Bloom timeline", "What is in flower, month by month, all year."),
+    ("Shopping list", "Varieties and counts for the nursery, or a PDF."),
 ]
+
+CONDITION_PLANTS = [
+    "lavandula-hidcote", "echinacea-purpurea", "acer-palmatum-osakazuki",
+    "hosta-halcyon", "stipa-tenuissima", "rudbeckia-fulgida-goldsturm",
+    "geranium-rozanne", "digitalis-purpurea", "helleborus-x-hybridus",
+]
+
+
+def plant_tags(p):
+    tags = []
+    if p["aspect"] & {"SOUTH", "WEST"}:
+        tags.append("Full sun")
+    elif "NORTH" in p["aspect"]:
+        tags.append("Shade")
+    else:
+        tags.append("Part shade")
+    for s, lab in [("CLAY", "Clay"), ("SANDY", "Sandy"), ("CHALK", "Chalk"),
+                   ("ACID", "Acid"), ("WET", "Moist")]:
+        if s in p["soil"]:
+            tags.append(lab)
+            break
+    if p["evergreen"]:
+        tags.append("Evergreen")
+    elif p["months"]:
+        tags.append(f'{MONTH_LABEL[p["months"][0]]}-{MONTH_LABEL[p["months"][-1]]}')
+    return tags[:3]
 
 
 def qr_figure():
     return ('<figure class="qr"><img src="img/appstore-qr.svg" width="92" height="92" '
             'alt="QR code to download Border Builder on the App Store">'
-            '<figcaption>Scan to download</figcaption></figure>')
+            '<figcaption>Scan from your phone</figcaption></figure>')
 
 
 def homepage_page():
@@ -652,60 +679,57 @@ def homepage_page():
         f'<figcaption>{e(cap)}</figcaption></figure>'
         for src, alt, cap in GALLERY
     )
-    steps = "".join(
-        f'<div class="step"><span class="n">{n}</span><b>{e(t)}</b><span>{e(d)}</span></div>'
-        for n, t, d in STEPS
-    )
-    tags = "".join(
-        f'<a href="collections/{slug}.html">{e(label)}</a>' for slug, label in LIBRARY_LINKS
-    )
-    band_step = max(1, len(PLANTS) // 56)
-    band = "".join(
-        f'<a href="plants/{p["slug"]}.html" title="{e(p["common"])}">'
-        f'<img src="img/plants/{p["slug"]}.webp" loading="lazy" alt="{e(p["common"])} illustration"></a>'
-        for p in PLANTS[::band_step][:56]
-        if os.path.exists(os.path.join(HERE, "img", "plants", f"{p['slug']}.webp"))
+    gets = "".join(f'<li><b>{e(t)}</b><span>{e(d)}</span></li>' for t, d in WHATYOUGET)
+    cluster = "".join(
+        f'<figure class="condplant"><a href="plants/{s}.html">'
+        f'<img src="img/plants/{s}.webp" loading="lazy" alt="{e(BY_SLUG[s]["common"])} illustration"></a>'
+        f'<figcaption><b>{e(BY_SLUG[s]["common"])}</b>'
+        f'<span class="ptags">{"".join(f"<em>{e(t)}</em>" for t in plant_tags(BY_SLUG[s]))}</span>'
+        f'</figcaption></figure>'
+        for s in CONDITION_PLANTS
+        if s in BY_SLUG and os.path.exists(os.path.join(HERE, "img", "plants", f"{s}.webp"))
     )
     body = f"""
 <section class="hero">
 <div class="hero-copy">
-<p class="kicker">Garden border planner for iPhone and iPad</p>
-<h1>Plan a garden border that blooms all year</h1>
-<p class="sub">Tell Border Builder your bed's size, aspect and soil. It draws a complete
-planting plan: which plants, where they go, how many, and what the border will look like
-through every month of the year.</p>
-<div class="get">{store_buttons(up="")}{qr_figure()}</div>
+<p class="kicker">Garden border planning for iPhone and iPad</p>
+<h1>Border Builder makes a planting plan you can actually build</h1>
+<p class="sub">Enter the size, light and soil of your border. Get a drift map, plant
+quantities, a bloom timeline and a nursery list, in minutes.</p>
+<div class="get">{store_buttons(up="")}</div>
 <p class="get-note">Free to download. No account, no ads.</p>
+{qr_figure()}
 </div>
 <div class="hero-shot">
 <img src="img/app-planted.webp" width="500" height="789"
 alt="Border Builder showing a painted preview of a planted border">
 </div>
 </section>
-<section class="band">
-<h2>Every plant, illustrated</h2>
-<p class="band-sub">The catalogue runs to {len(PLANTS):,} plants, each illustrated and
-checked against your climate. A few are shown here; browse the full library by sun, soil,
-colour and style.</p>
-<div class="plantband">{band}</div>
-<nav class="tags">{tags}</nav>
-<p class="chips"><a class="chip" href="collections/index.html">All collections</a>
-<a class="chip" href="plants/index.html">Every plant</a></p>
-</section>
 <section class="block">
-<h2>From a few details to a border you can build</h2>
+<h2>What you get</h2>
+<ul class="gets">{gets}</ul>
 <div class="gallery">{gallery}</div>
 </section>
-<section class="block">
-<h2>How it works</h2>
-<div class="steps">{steps}</div>
+<section class="block conditions">
+<div class="cond-copy">
+<h2>Chosen for your conditions</h2>
+<p>Border Builder checks sun, soil, height, spread, season and style before it places a
+plant. It is a planting plan, not a plant list.</p>
+<ul class="criteria">
+<li><b>Sun and soil</b>, matched to your aspect and ground</li>
+<li><b>Height and role</b>, placed back to front</li>
+<li><b>Season and style</b>, for colour all year in your look</li>
+</ul>
+<p class="chips"><a class="chip" href="plants/index.html">Browse {len(PLANTS):,} plants</a>
+<a class="chip" href="collections/index.html">All collections</a></p>
+</div>
+<div class="cond-cluster">{cluster}</div>
 </section>
 <section class="block freepro">
 <h2>Free, with an optional Pro unlock</h2>
-<p>Designing a border and viewing the full plan, the drift map, the elevation and the
-bloom timeline is free, with no account and nothing tracked. A one-time Pro purchase
-saves unlimited borders, lets you edit the planting and re-plan around a month, and
-exports the shopping list and a PDF.</p>
+<p>Design a border and view the full plan for free, with no account and nothing tracked.
+A one-time Pro purchase saves unlimited borders, unlocks editing and re-planning around a
+month, and exports the shopping list and a PDF.</p>
 </section>
 <section class="endcta">
 <h2>Design your border this weekend</h2>
@@ -730,9 +754,22 @@ exports the shopping list and a PDF.</p>
                 canon, body, jsonld=ld, depth=0, main_class="home")
 
 
+def cleanurls(content):
+    # Extensionless URLs: GitHub Pages serves /plants/foo from /plants/foo.html, so
+    # strip ".html" (and index -> directory) from links, canonicals, JSON-LD and the
+    # sitemap. Home and bare hub crumb links are emitted absolute at the source.
+    content = re.sub(r'(https://borderbuilderapp\.com/[^\s"<)]*?)\.html', r'\1', content)
+    content = re.sub(r'(https://borderbuilderapp\.com/[^\s"<)]*?/)index(?=["<\s)])', r'\1', content)
+    content = re.sub(r'(href=")([^":?#]*?)\.html(")', r'\1\2\3', content)
+    content = re.sub(r'(href="[^":?#]*?/)index(")', r'\1\2', content)
+    return content
+
+
 def write(relpath, content):
     full = os.path.join(HERE, relpath)
     os.makedirs(os.path.dirname(full), exist_ok=True)
+    if relpath.endswith(".html") or relpath == "sitemap.xml":
+        content = cleanurls(content)
     with open(full, "w") as fh:
         fh.write(content)
 
@@ -771,7 +808,7 @@ def main():
         f"All plants ({len(PLANTS):,}) | {SITE_NAME}",
         f"Browse all {len(PLANTS):,} plants in Border Builder with size, aspect and bloom time.",
         f"{BASE_URL}/plants/index.html",
-        f'{crumb_html([("Home","../index.html"),("Plants",None)])}'
+        f'{crumb_html([("Home","/"),("Plants",None)])}'
         f'<header class="hero"><h1>All plants</h1></header>'
         f'<p class="lead">Every plant Border Builder can place in a border - {len(PLANTS):,} in all.</p>'
         f'<ul class="grid">{az}</ul>', depth=1, robots="noindex,follow"))
@@ -784,7 +821,7 @@ def main():
         f"Plant collections | {SITE_NAME}",
         "Curated plant lists by sun, soil, colour, style and more - then plan a border with Border Builder.",
         f"{BASE_URL}/collections/index.html",
-        f'{crumb_html([("Home","../index.html"),("Collections",None)])}'
+        f'{crumb_html([("Home","/"),("Collections",None)])}'
         f'<header class="hero"><h1>Plant collections</h1></header>'
         f'<p class="lead">Plants grouped by the things you actually search for: sun, soil, colour, style and size.</p>'
         f'<ul class="grid wide">{coll_cards}</ul>', depth=1))
