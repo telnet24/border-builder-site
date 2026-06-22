@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://borderbuilderapp.com/sitemap.xml
