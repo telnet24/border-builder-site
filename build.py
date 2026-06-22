@@ -615,17 +615,6 @@ FEATURED = [
 ]
 
 
-LIBRARY_LINKS = [
-    ("full-sun", "Full sun"), ("shade", "Shade"), ("partial-shade", "Partial shade"),
-    ("soil-clay", "Clay soil"), ("soil-sandy", "Sandy soil"), ("soil-chalk", "Chalk soil"),
-    ("soil-wet", "Wet soil"), ("evergreen", "Evergreen"),
-    ("pollinator-friendly", "Pollinator-friendly"), ("pet-safe", "Pet-safe"),
-    ("low-edging", "Edging and front"), ("tall-back", "Back of border"),
-    ("style-cottage", "Cottage garden"), ("style-wildlife", "Wildlife garden"),
-    ("style-mediterranean", "Mediterranean"), ("type-shrub", "Shrubs"),
-    ("type-perennial", "Perennials"), ("type-grass", "Ornamental grasses"),
-]
-
 GALLERY = [
     ("app-plan.webp", "Border Builder's top-down planting plan", "A scaled drift map with plant counts"),
     ("app-move.webp", "Moving and swapping plants on the map", "Adjust the plan before you buy"),

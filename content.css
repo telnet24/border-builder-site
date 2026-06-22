@@ -118,17 +118,6 @@ section.block > p { font-size: 17px; max-width: 60ch; }
   box-shadow: 0 12px 32px rgba(60, 50, 30, 0.14);
 }
 
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
-.step .n {
-  font-family: "Iowan Old Style", Palatino, Georgia, serif;
-  font-size: 30px; color: var(--accent); opacity: 0.55;
-}
-.step b { display: block; margin: 8px 0 5px; font-size: 17px; }
-.step span { color: var(--fg-muted); font-size: 15px; line-height: 1.45; }
-
-.tags { display: flex; flex-wrap: wrap; gap: 10px 20px; margin: 18px 0; }
-.tags a { font-size: 16px; }
-
 .endcta {
   background: var(--accent); border-radius: 18px; padding: 56px 32px;
   text-align: center; margin-top: 64px;
@@ -145,7 +134,6 @@ section.block > p { font-size: 17px; max-width: 60ch; }
   .hero-shot { order: -1; }
   .hero-shot img { max-width: 230px; transform: none; }
   .gallery { grid-template-columns: 1fr; max-width: 300px; margin: 0 auto; }
-  .steps { grid-template-columns: 1fr; gap: 22px; }
 }
 
 /* === plant-page enrichment ================================================= */
@@ -170,21 +158,6 @@ main.home .hero { border-bottom: none; padding-bottom: 0; }
   font-size: 13px; letter-spacing: 0.09em; text-transform: uppercase;
   color: var(--accent); font-weight: 600; margin: 0 0 14px;
 }
-.band { padding: 64px 0 0; }
-.band > h2 { font-size: 27px; margin: 0 0 6px; }
-.band-sub { font-size: 17px; color: var(--fg-muted); max-width: 62ch; margin: 0 0 26px; }
-.plantband {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-  gap: 3px; margin: 0 0 22px;
-}
-.plantband a {
-  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-  border-radius: 8px; padding: 4px; transition: background 0.15s;
-}
-.plantband a:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
-.plantband img { width: 100%; height: 100%; object-fit: contain; }
-.band .tags { margin: 18px 0 14px; }
-
 /* === plant-page illustration ============================================== */
 .plant-hero { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .plant-head { min-width: 0; }
