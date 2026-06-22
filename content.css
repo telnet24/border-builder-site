@@ -126,7 +126,7 @@ section.block > p { font-size: 17px; max-width: 60ch; }
 .endcta .get { justify-content: center; }
 .endcta .qr figcaption { color: rgba(250, 247, 239, 0.7); }
 
-@media (min-width: 760px) { .qr { display: block; } }
+@media (min-width: 760px) { .qr { display: inline-block; } }
 
 @media (max-width: 759px) {
   main.home { padding: 16px 18px 56px; }
@@ -169,7 +169,7 @@ main.home .hero { border-bottom: none; padding-bottom: 0; }
 
 /* === redesign: what-you-get, conditions cluster, accent ===================== */
 :root { --accent2: #a8633a; }
-.qr img { width: 76px; height: 76px; }   /* QR demoted to secondary in hero */
+.qr img { width: 76px; height: 76px; margin: 0 auto; }   /* QR demoted to secondary in hero */
 
 ul.gets {
   list-style: none; padding: 0; margin: 0 0 40px;
