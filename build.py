@@ -90,7 +90,8 @@ GUIDANCE = {}
 _guide_path = os.path.join(HERE, "category-intros.json")
 if os.path.exists(_guide_path):
     with open(_guide_path) as _gf:
-        GUIDANCE = json.load(_gf)
+        # normalise keys: the authored file uses style-shade_cottage; slugs use hyphens
+        GUIDANCE = {k.replace("_", "-"): v for k, v in json.load(_gf).items()}
 
 TYPE_LABEL = {
     "perennial": "Perennials", "shrub": "Shrubs", "bulb": "Bulbs",
@@ -407,7 +408,7 @@ def plant_page(p):
     comp_html = "".join(
         f'<li><a href="{q["slug"]}.html"><b>{e(q["common"])}</b>'
         f'<span>{e(companion_reason(p, q))}</span></a></li>'
-        for q in companions(p, 6)
+        for q in [c for c in companions(p, 30) if indexable_plant(c)][:6]
     )
     notes = care_notes(p)
     notes_html = ("<h2>Worth knowing</h2><ul class=\"notes\">"
@@ -644,17 +645,6 @@ def qr_figure():
             '<figcaption>Scan to download</figcaption></figure>')
 
 
-PLANT_BAND = [
-    "acer-palmatum-osakazuki", "echinacea-purpurea", "lavandula-hidcote", "stipa-tenuissima",
-    "allium-purple-sensation", "digitalis-purpurea", "rudbeckia-fulgida-goldsturm",
-    "hosta-sum-and-substance", "verbena-bonariensis", "crocosmia-lucifer",
-    "salvia-nemorosa-caradonna", "geranium-rozanne", "paeonia-lactiflora-sarah-bernhardt",
-    "helleborus-x-hybridus", "tulipa-queen-of-night", "narcissus-tete-a-tete",
-    "astrantia-major-hadspen-blood", "alchemilla-mollis", "anemone-x-hybrida-honorine-jobert",
-    "buddleja-davidii",
-]
-
-
 def homepage_page():
     canon = f"{BASE_URL}/"
     gallery = "".join(
@@ -669,11 +659,12 @@ def homepage_page():
     tags = "".join(
         f'<a href="collections/{slug}.html">{e(label)}</a>' for slug, label in LIBRARY_LINKS
     )
+    band_step = max(1, len(PLANTS) // 56)
     band = "".join(
-        f'<a href="plants/{s}.html" title="{e(BY_SLUG[s]["common"])}">'
-        f'<img src="img/plants/{s}.webp" loading="lazy" alt="{e(BY_SLUG[s]["common"])} illustration"></a>'
-        for s in PLANT_BAND
-        if s in BY_SLUG and os.path.exists(os.path.join(HERE, "img", "plants", f"{s}.webp"))
+        f'<a href="plants/{p["slug"]}.html" title="{e(p["common"])}">'
+        f'<img src="img/plants/{p["slug"]}.webp" loading="lazy" alt="{e(p["common"])} illustration"></a>'
+        for p in PLANTS[::band_step][:56]
+        if os.path.exists(os.path.join(HERE, "img", "plants", f"{p['slug']}.webp"))
     )
     body = f"""
 <section class="hero">
@@ -693,8 +684,9 @@ alt="Border Builder showing a painted preview of a planted border">
 </section>
 <section class="band">
 <h2>Every plant, illustrated</h2>
-<p class="band-sub">A catalogue of {len(PLANTS):,} border plants, each drawn by hand and
-checked against your climate. Browse by what you actually search for.</p>
+<p class="band-sub">The catalogue runs to {len(PLANTS):,} plants, each illustrated and
+checked against your climate. A few are shown here; browse the full library by sun, soil,
+colour and style.</p>
 <div class="plantband">{band}</div>
 <nav class="tags">{tags}</nav>
 <p class="chips"><a class="chip" href="collections/index.html">All collections</a>
@@ -762,9 +754,11 @@ def main():
 
     coll_members = {}
     for slug, h1, title, intro, pred in COLLECTIONS:
-        members = sorted([p for p in PLANTS if pred(p)], key=lambda p: p["common"].lower())
+        members = sorted([p for p in PLANTS if pred(p) and indexable_plant(p)],
+                         key=lambda p: p["common"].lower())
         if not members:
             continue
+        assert slug in GUIDANCE, f"collection has no authored guidance: {slug}"
         coll_members[slug] = (h1, members)
         related_links = related_for(slug, h1)
         write(f"collections/{slug}.html",
