@@ -419,13 +419,17 @@ def plant_page(p):
     found = found_in_links(p)
     found_html = (f'<p class="found">It appears in our lists of {", ".join(found[:6])}.</p>'
                   if found else "")
+    art = (f'<img class="plant-art" src="../img/plants/{p["slug"]}.webp" '
+           f'alt="Illustration of {e(p["common"])}" width="150" height="150">'
+           if os.path.exists(os.path.join(HERE, "img", "plants", f'{p["slug"]}.webp')) else "")
 
     trail = [("Home", "/index.html"), ("Plants", "/plants/index.html"), (p["common"], None)]
     body = f"""
 {crumb_html([("Home","../index.html"),("Plants","index.html"),(p["common"],None)])}
-<header class="hero">
-<h1>{e(p["common"])}</h1>
-<p class="latin">{e(p["name"])}</p>
+<header class="hero plant-hero">
+<div class="plant-head"><h1>{e(p["common"])}</h1>
+<p class="latin">{e(p["name"])}</p></div>
+{art}
 </header>
 <p class="lead">{e(p["common"])} is {article} {e(p["type"])} for {e(role_txt)}, suited to
 {e(aspect_txt)} and {e(soil_txt)}, flowering {e(months_txt)}.</p>

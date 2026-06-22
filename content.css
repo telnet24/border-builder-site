@@ -184,3 +184,12 @@ main.home .hero { border-bottom: none; padding-bottom: 0; }
 .plantband a:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
 .plantband img { width: 100%; height: 100%; object-fit: contain; }
 .band .tags { margin: 18px 0 14px; }
+
+/* === plant-page illustration ============================================== */
+.plant-hero { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.plant-head { min-width: 0; }
+.plant-art { width: 150px; height: 150px; object-fit: contain; flex: none; }
+@media (max-width: 559px) {
+  .plant-hero { flex-direction: row; gap: 14px; }
+  .plant-art { width: 96px; height: 96px; }
+}
