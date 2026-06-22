@@ -413,6 +413,53 @@ def related_for(slug, h1):
 
 # --- emit ---------------------------------------------------------------------
 
+FEATURED = [
+    ("full-sun", "For full sun", "South or west-facing beds"),
+    ("shade", "For shade", "North-facing and shaded spots"),
+    ("soil-clay", "For clay soil", "Copes with heavy clay"),
+    ("pollinator-friendly", "Pollinator-friendly", "Feeds bees and butterflies"),
+    ("evergreen", "Evergreen", "Year-round structure"),
+    ("style-cottage", "Cottage garden", "Relaxed, informal planting"),
+    ("style-wildlife", "Wildlife garden", "Supports garden wildlife"),
+    ("type-shrub", "Shrubs", "The backbone of a border"),
+]
+
+
+def homepage_page():
+    canon = f"{BASE_URL}/index.html"
+    feat = "".join(
+        f'<li><a href="collections/{slug}.html"><b>{e(label)}</b><span>{e(blurb)}</span></a></li>'
+        for slug, label, blurb in FEATURED
+    )
+    body = f"""
+<header class="hero">
+<h1>Border Builder</h1>
+<p class="latin">A garden border planner for iPhone and iPad.</p>
+</header>
+<p class="lead">Tell Border Builder your bed's size, aspect, soil and style, and it
+draws a complete planting plan: a top-down map, a side-view elevation, a planting
+list, a year-round bloom timeline, and a shopping list.</p>
+{cta("Free on the App Store for iPhone and iPad in the US, UK and Canada.")}
+<h2>Explore the plants</h2>
+<p>Browse the {len(PLANTS):,} plants Border Builder can place, grouped by what you
+actually search for - sun, soil, colour, style and size.</p>
+<ul class="grid">{feat}</ul>
+<p class="chips"><a class="chip" href="collections/index.html">All collections</a>
+<a class="chip" href="plants/index.html">All {len(PLANTS):,} plants</a></p>
+<h2>Free, with an optional Pro unlock</h2>
+<p>Designing and viewing a border is free. A one-time Border Builder Pro purchase
+unlocks saving unlimited borders, editing the planting (move and swap plants,
+re-plan around a month), and exporting a shopping list and PDF.</p>
+"""
+    ld = {"@context": "https://schema.org", "@type": "WebSite", "name": SITE_NAME,
+          "url": BASE_URL + "/"}
+    return page(f"{SITE_NAME} - garden border planner for iPhone and iPad",
+                "Border Builder turns your bed's size, aspect, soil and style into a "
+                "complete planting plan. Free on the App Store. Browse 1,300+ plants by "
+                "sun, soil, colour and style.",
+                canon, body, jsonld=ld, depth=0)
+
+
 def write(relpath, content):
     full = os.path.join(HERE, relpath)
     os.makedirs(os.path.dirname(full), exist_ok=True)
@@ -446,12 +493,12 @@ def main():
     # browse hubs
     az = "".join(card(p) for p in sorted(PLANTS, key=lambda p: p["common"].lower()))
     write("plants/index.html", page(
-        f"All plants ({len(PLANTS)}) | {SITE_NAME}",
-        f"Browse all {len(PLANTS)} plants in Border Builder with size, aspect and bloom time.",
+        f"All plants ({len(PLANTS):,}) | {SITE_NAME}",
+        f"Browse all {len(PLANTS):,} plants in Border Builder with size, aspect and bloom time.",
         f"{BASE_URL}/plants/index.html",
         f'{crumb_html([("Home","../index.html"),("Plants",None)])}'
         f'<header class="hero"><h1>All plants</h1></header>'
-        f'<p class="lead">Every plant Border Builder can place in a border - {len(PLANTS)} in all.</p>'
+        f'<p class="lead">Every plant Border Builder can place in a border - {len(PLANTS):,} in all.</p>'
         f'<ul class="grid">{az}</ul>', depth=1))
 
     coll_cards = "".join(
@@ -466,6 +513,10 @@ def main():
         f'<header class="hero"><h1>Plant collections</h1></header>'
         f'<p class="lead">Plants grouped by the things you actually search for: sun, soil, colour, style and size.</p>'
         f'<ul class="grid wide">{coll_cards}</ul>', depth=1))
+
+    # homepage (replaces the old hand-authored stub: adds App Store CTA + paths
+    # into the plant guides, the site's highest-authority internal links)
+    write("index.html", homepage_page())
 
     # sitemap + robots
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
