@@ -73,6 +73,7 @@ def norm(p):
         "styles": set(p.get("styles") or []),
         "roles": set(p.get("roleCapabilities") or []),
         "colours": set(p.get("flowerColours") or []),
+        "regions": set(p.get("regions") or []),
         "months": [m for m in (p.get("flowerMonths") or []) if m in MONTHS],
         "hardiness": p.get("hardiness") or {},
         "petSafe": "yes" if truthy(p.get("petSafe")) else ("no" if falsy(p.get("petSafe")) else "unknown"),
@@ -131,9 +132,10 @@ def cta(line, up=""):
     return f'<section class="cta"><p>{e(line)}</p>{store_buttons(up)}</section>'
 
 
-def page(title, description, canonical, body, jsonld=None, depth=1, main_class=""):
+def page(title, description, canonical, body, jsonld=None, depth=1, main_class="", robots=None):
     up = "../" * depth
     ld = f'<script type="application/ld+json">{json.dumps(jsonld)}</script>' if jsonld else ""
+    robots_meta = f'\n<meta name="robots" content="{robots}">' if robots else ""
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -141,7 +143,7 @@ def page(title, description, canonical, body, jsonld=None, depth=1, main_class="
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{e(title)}</title>
 <meta name="description" content="{e(description)}">
-<link rel="canonical" href="{e(canonical)}">
+<link rel="canonical" href="{e(canonical)}">{robots_meta}
 <link rel="icon" href="{up}favicon.svg" type="image/svg+xml">
 <meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(description)}">
@@ -250,24 +252,167 @@ def citation_block(cit):
     return f'<section class="sources"><h2>Sources</h2><p>Bloom timing and hardiness drawn from:</p><ul>{items}</ul></section>'
 
 
+SOIL_WORD = {"LOAM": "loam", "CLAY": "clay", "SANDY": "sandy soil", "CHALK": "chalk",
+             "ACID": "acid soil", "WET": "moist ground"}
+
+
+def soil_phrase(soil):
+    order = ["CLAY", "LOAM", "SANDY", "CHALK", "ACID", "WET"]
+    words = [SOIL_WORD[s] for s in order if s in soil]
+    if not words:
+        return "most soils"
+    if len(words) == 1:
+        return words[0]
+    return ", ".join(words[:-1]) + " or " + words[-1]
+
+
+def placement_sentence(p):
+    h = p["height"] or 0
+    roles = p["roles"]
+    if "STRUCTURE" in roles or "FOCAL" in roles or h >= 120:
+        where = "toward the back of a border, or on its own as a focal point with room around it"
+    elif "EDGING" in roles or "GROUNDCOVER" in roles or h < 40:
+        where = "along the front edge, where a low, spreading habit reads best"
+    else:
+        where = "through the middle of a border, between taller structure behind and edging in front"
+    return f"At around {p['height']} cm, it sits best {where}."
+
+
+def spacing_sentence(p):
+    s = p["spread"]
+    if not s:
+        return ""
+    txt = f"Give it about {s} cm of room to spread"
+    if s <= 50:
+        per_m = round(100.0 / s)
+        if per_m >= 2:
+            txt += f", roughly {per_m} to the metre when planted in a drift"
+    return txt + "."
+
+
+def hardiness_sentence(p):
+    h = p["hardiness"]
+    bits = []
+    if h.get("usdaMin") and h.get("usdaMax"):
+        bits.append(f"hardy across USDA zones {h['usdaMin']} to {h['usdaMax']}")
+    if h.get("rhs"):
+        bits.append(f"rated {h['rhs'].upper()} by the RHS")
+    if not bits:
+        return ""
+    return "It is " + " and ".join(bits) + ", so check it suits your area before planting."
+
+
+_COMP = {}
+
+
+def companions(p, n=6):
+    if p["slug"] not in _COMP:
+        scored = []
+        for q in PLANTS:
+            if q["slug"] == p["slug"]:
+                continue
+            if not (p["aspect"] & q["aspect"]) or not (p["soil"] & q["soil"]):
+                continue
+            shared = len(p["styles"] & q["styles"])
+            if shared == 0:
+                continue
+            if p["regions"] and q["regions"] and not (p["regions"] & q["regions"]):
+                continue
+            role_complement = 1 if (q["roles"] - p["roles"]) else 0
+            season_extend = 1 if (set(q["months"]) - set(p["months"])) else 0
+            scored.append((shared * 2 + role_complement + season_extend, q))
+        scored.sort(key=lambda x: (-x[0], x[1]["common"].lower()))
+        _COMP[p["slug"]] = [q for _, q in scored]
+    return _COMP[p["slug"]][:n]
+
+
+def companion_reason(p, q):
+    hp, hq = p["height"] or 0, q["height"] or 0
+    if hq >= hp + 40 and ("STRUCTURE" in q["roles"] or "FOCAL" in q["roles"]):
+        return "for height behind it"
+    if hq + 40 <= hp or (q["roles"] & {"EDGING", "GROUNDCOVER"}):
+        return "to edge in front"
+    if set(q["months"]) - set(p["months"]):
+        return "to flower when it does not"
+    return "as a partner at the same level"
+
+
+def care_notes(p):
+    notes = []
+    if p["evergreen"]:
+        notes.append("Evergreen, so it keeps the border furnished through winter.")
+    if "WET" in p["soil"] and not (p["soil"] & {"SANDY", "CHALK"}):
+        notes.append("It copes with ground that stays wet, which most border plants will not.")
+    if "ACID" in p["soil"] and "CHALK" not in p["soil"]:
+        notes.append("It tolerates acid soil but dislikes shallow chalk.")
+    if p["aspect"] and "NORTH" in p["aspect"]:
+        notes.append("It tolerates a shaded, north-facing spot.")
+    if p["petSafe"] == "no":
+        notes.append("Not recorded as pet-safe; site it away from pets that graze if that matters to you.")
+    if p["pollinator"]:
+        notes.append("Its flowers are valued by bees and other pollinators.")
+    return notes
+
+
+def indexable_plant(p):
+    return bool(p["height"] and p["roles"] and (p["months"] or p["evergreen"])
+                and len(companions(p)) >= 3)
+
+
+FOUND_IN = [
+    (("aspect", "SOUTH"), "full-sun", "full sun"),
+    (("aspect", "NORTH"), "shade", "shade"),
+    (("soil", "CLAY"), "soil-clay", "clay soil"),
+    (("soil", "SANDY"), "soil-sandy", "sandy soil"),
+    (("soil", "CHALK"), "soil-chalk", "chalk soil"),
+    (("soil", "ACID"), "soil-acid", "acid soil"),
+    (("soil", "WET"), "soil-wet", "wet soil"),
+    (("evergreen", True), "evergreen", "evergreen plants"),
+    (("pollinator", True), "pollinator-friendly", "pollinator-friendly plants"),
+    (("petSafe", "yes"), "pet-safe", "pet-safe plants"),
+]
+
+
+def found_in_links(p):
+    out = []
+    for (field, val), slug, label in FOUND_IN:
+        cur = p[field]
+        hit = (val in cur) if isinstance(cur, set) else (cur == val or cur is val)
+        if hit:
+            out.append(f'<a href="../collections/{slug}.html">{e(label)}</a>')
+    return out
+
+
 def plant_page(p):
     canon = f"{BASE_URL}/plants/{p['slug']}.html"
-    title = f"{p['common']} ({p['name']}) care and planting guide | {SITE_NAME}"
     months_txt = ", ".join(MONTH_LABEL[m] for m in p["months"]) or "varies by climate"
-    desc = (f"{p['common']} ({p['name']}): {p['type']}, "
-            f"{p['height']}cm tall, {aspect_words(p['aspect'])}, flowers {months_txt}. "
-            "Plan a border with it in Border Builder.")[:300]
+    aspect_txt = aspect_words(p["aspect"])
+    soil_txt = soil_phrase(p["soil"])
+    article = "an" if (p["type"][:1].lower() in "aeiou") else "a"
+    role_txt = ", ".join(ROLE_LABEL.get(r, r.lower()) for r in sorted(p["roles"])) or "border planting"
 
+    title = f"{p['common']} ({p['name']}): size, soil and where to plant it | {SITE_NAME}"
+    desc = (f"{p['common']} ({p['name']}), {article} {p['type']} for {aspect_txt} and {soil_txt}. "
+            f"About {p['height']}cm, flowers {months_txt}; placement, companions and sources.")[:200]
+
+    plant_para = " ".join(x for x in [placement_sentence(p), spacing_sentence(p),
+                                       hardiness_sentence(p)] if x)
+    comp_html = "".join(
+        f'<li><a href="{q["slug"]}.html"><b>{e(q["common"])}</b>'
+        f'<span>{e(companion_reason(p, q))}</span></a></li>'
+        for q in companions(p, 6)
+    )
+    notes = care_notes(p)
+    notes_html = ("<h2>Worth knowing</h2><ul class=\"notes\">"
+                  + "".join(f"<li>{e(x)}</li>" for x in notes) + "</ul>") if notes else ""
     style_links = " ".join(
         f'<a class="chip" href="../collections/{slugify("style-" + s)}.html">{e(STYLE_LABEL.get(s, s.title()))}</a>'
         for s in sorted(p["styles"]) if s in STYLE_LABEL
     )
-    role_txt = ", ".join(ROLE_LABEL.get(r, r.lower()) for r in sorted(p["roles"])) or "border planting"
-    rel = related(p)
-    rel_html = "".join(
-        f'<li><a href="{q["slug"]}.html"><b>{e(q["common"])}</b><span>{e(q["name"])}</span></a></li>'
-        for q in rel
-    )
+    found = found_in_links(p)
+    found_html = (f'<p class="found">It appears in our lists of {", ".join(found[:6])}.</p>'
+                  if found else "")
+
     trail = [("Home", "/index.html"), ("Plants", "/plants/index.html"), (p["common"], None)]
     body = f"""
 {crumb_html([("Home","../index.html"),("Plants","index.html"),(p["common"],None)])}
@@ -275,20 +420,36 @@ def plant_page(p):
 <h1>{e(p["common"])}</h1>
 <p class="latin">{e(p["name"])}</p>
 </header>
-<p class="lead">{e(p["common"])} is a {e(p["type"])} for {e(role_txt)}, growing to about {p["height"]} cm.
-It suits {e(aspect_words(p["aspect"]))} and flowers {e(months_txt)}.</p>
+<p class="lead">{e(p["common"])} is {article} {e(p["type"])} for {e(role_txt)}, suited to
+{e(aspect_txt)} and {e(soil_txt)}, flowering {e(months_txt)}.</p>
 {fact_rows(p)}
+<h2>Where to use it in a border</h2>
+<p>{e(plant_para)}</p>
+{found_html}
 <h2>Flowering through the year</h2>
 {bloom_strip(p["months"])}
+{notes_html}
+<h2>Good companions</h2>
+<p>Plants that share its conditions and style, chosen to complement its place in the border:</p>
+<ul class="grid">{comp_html}</ul>
 <h2>Garden styles</h2>
 <p class="chips">{style_links or "Versatile across planting styles."}</p>
-{cta(f"Place {p['common']} in a real border with the right spacing and neighbours - Border Builder draws the plan for you.", up="../")}
+{cta(f"See {p['common']} set in a full border, with spacing and companions worked out for your own conditions, in Border Builder.", up="../")}
 {citation_block(p["citations"])}
-<h2>Similar plants</h2>
-<ul class="grid">{rel_html}</ul>
 """
-    ld = breadcrumbs(trail)
-    return page(title, desc, canon, body, jsonld=ld, depth=1)
+    bc = breadcrumbs(trail)
+    bc.pop("@context", None)
+    ld = {"@context": "https://schema.org", "@graph": [
+        {"@type": "Article",
+         "headline": f"{p['common']} ({p['name']}): planting guide",
+         "about": p["common"], "datePublished": "2026-06-22", "dateModified": "2026-06-22",
+         "author": {"@type": "Organization", "name": SITE_NAME},
+         "publisher": {"@type": "Organization", "name": SITE_NAME,
+                       "logo": {"@type": "ImageObject", "url": BASE_URL + "/favicon.svg"}}},
+        bc,
+    ]}
+    robots = None if indexable_plant(p) else "noindex,follow"
+    return page(title, desc, canon, body, jsonld=ld, depth=1, robots=robots)
 
 
 # --- collection pages ---------------------------------------------------------
@@ -466,7 +627,7 @@ def qr_figure():
 
 
 def homepage_page():
-    canon = f"{BASE_URL}/index.html"
+    canon = f"{BASE_URL}/"
     gallery = "".join(
         f'<img src="img/{src}" width="500" height="1084" loading="lazy" alt="{e(alt)}">'
         for src, alt in GALLERY
@@ -482,16 +643,18 @@ def homepage_page():
 <section class="hero">
 <div class="hero-copy">
 <h1>Know the bed before you dig</h1>
-<p class="sub">See your border drawn out, painted as it will grow in, and flowering
-across the year, before you buy a single plant.</p>
+<p class="sub">Border Builder is a garden border planner for iPhone and iPad. See your
+border drawn out, painted as it will grow in, and flowering across the year, before you
+buy a single plant.</p>
 <div class="get">{store_buttons(up="")}{qr_figure()}</div>
+<p class="get-note">Free to download. No account, nothing tracked.</p>
 </div>
 <div class="hero-shot">
 <img src="img/app-planted.webp" width="500" height="789"
 alt="Border Builder showing a painted preview of a planted border">
 </div>
 </section>
-<p class="trust">{len(PLANTS):,} plants, each checked against your climate. No account,
+<p class="trust">{len(PLANTS):,} plants, with hardiness and climate data built in. No account,
 nothing tracked, works offline.</p>
 <section class="block">
 <h2>From a few details to a border you can build</h2>
@@ -551,11 +714,14 @@ def main():
         if os.path.isdir(p):
             shutil.rmtree(p)
 
-    urls = ["/index.html", "/plants/index.html", "/collections/index.html"]
+    urls = ["/", "/collections/index.html"]
+    indexed = 0
 
     for p in PLANTS:
         write(f"plants/{p['slug']}.html", plant_page(p))
-        urls.append(f"/plants/{p['slug']}.html")
+        if indexable_plant(p):
+            urls.append(f"/plants/{p['slug']}.html")
+            indexed += 1
 
     coll_members = {}
     for slug, h1, title, intro, pred in COLLECTIONS:
@@ -577,7 +743,7 @@ def main():
         f'{crumb_html([("Home","../index.html"),("Plants",None)])}'
         f'<header class="hero"><h1>All plants</h1></header>'
         f'<p class="lead">Every plant Border Builder can place in a border - {len(PLANTS):,} in all.</p>'
-        f'<ul class="grid">{az}</ul>', depth=1))
+        f'<ul class="grid">{az}</ul>', depth=1, robots="noindex,follow"))
 
     coll_cards = "".join(
         f'<li><a href="{slug}.html"><b>{e(h1)}</b><span>{len(members)} plants</span></a></li>'
@@ -600,12 +766,12 @@ def main():
     sm = ['<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for u in urls:
-        sm.append(f"<url><loc>{e(BASE_URL + u)}</loc></url>")
+        sm.append(f"<url><loc>{e(BASE_URL + u)}</loc><lastmod>2026-06-22</lastmod></url>")
     sm.append("</urlset>")
     write("sitemap.xml", "\n".join(sm))
     write("robots.txt", f"User-agent: *\nAllow: /\nSitemap: {BASE_URL}/sitemap.xml\n")
 
-    print(f"plants: {len(PLANTS)}  collections: {len(coll_members)}  total urls: {len(urls)}")
+    print(f"plants: {len(PLANTS)} ({indexed} indexed)  collections: {len(coll_members)}  sitemap urls: {len(urls)}")
 
 
 if __name__ == "__main__":
